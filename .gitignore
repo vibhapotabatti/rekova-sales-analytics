@@ -1,0 +1,12 @@
+# generated data — never commit
+data/raw/
+
+# optional: some people publish the .pbix; default keep it out (size)
+*.pbix
+
+# misc
+__pycache__/
+*.pyc
+.vscode/
+*.sqlite
+*.db

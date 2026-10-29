@@ -1,0 +1,81 @@
+// ============================================================
+// Rekova Sales Command Center — measure library
+// Paste each into Modeling → New Measure (or use a measures table)
+// Naming: verbs out, spaces OK with % in the name for readability
+// ============================================================
+
+-- ================= CORE =================
+Net Sales =
+SUM ( fact_sellout_monthly[net_sales] )
+
+Gross Sales =
+SUM ( fact_sellout_monthly[gross_sales] )
+
+Sell-out Units =
+SUM ( fact_sellout_monthly[units] )
+
+Avg Net Price per Unit =
+DIVIDE ( [Net Sales], [Sell-out Units] )
+
+-- ================= TARGET =================
+-- WARNING: the FP&A target feed exists at region × channel × month ONLY.
+-- Use these measures at region/channel grain — never split them by brand or SKU.
+Target Sales =
+SUM ( fact_targets[target_net_sales] )
+
+-- Achievement vs Budget (ABS%) — the KPI the Sales Director lives by
+Sales vs Target % =
+DIVIDE ( [Net Sales] - [Target Sales], [Target Sales] )
+
+-- ================= TIME INTELLIGENCE =================
+YoY Net Sales % =
+VAR LY = CALCULATE ( [Net Sales], SAMEPERIODLASTYEAR ( dim_date[month_start] ) )
+RETURN DIVIDE ( [Net Sales] - LY, LY )
+
+Twelve-month Net Sales =
+CALCULATE ( [Net Sales], DATESINPERIOD ( dim_date[month_start],
+             MAX ( dim_date[month_start] ), -12, MONTH ) )
+
+-- ================= CHANNEL & INVENTORY =================
+Sell-in Units =
+SUM ( fact_shipments_monthly[units_shipped] )
+
+-- Weeks of Cover ≈ sell-in ÷ weekly sell-out. >6 weeks = overstock alert
+Weeks of Cover =
+DIVIDE ( [Sell-in Units], DIVIDE ( [Sell-out Units], 4.33 ) )
+
+E-commerce Share % =
+DIVIDE (
+  CALCULATE ( [Net Sales], dim_distributor[channel_type] = "E-commerce" ),
+  [Net Sales]
+)
+
+-- ================= PROMO =================
+On-promo Units % =
+DIVIDE (
+  CALCULATE ( [Sell-out Units], fact_sellout_monthly[promo_flag] = 1 ),
+  [Sell-out Units]
+)
+
+-- ================= MARKET SHARE (retail audit) =================
+Our Market Share % =
+CALCULATE (
+  SUM ( fact_retail_audit[value_share_pct] ) / 100,
+  fact_retail_audit[manufacturer] = "Rekova"
+)
+
+Category Value (₹ Mn) =
+MAX ( fact_retail_audit[category_value_mn_inr] )
+
+-- ================= PARETO (SKU concentration) =================
+-- Put SKU on rows; cumulative share of total revenue
+SKU Cumulative Revenue % =
+VAR ThisSKURev = [Net Sales]
+VAR AllRev     = CALCULATE ( [Net Sales], REMOVEFILTERS ( dim_product ) )
+VAR RevBelowOrEqual =
+    SUMX (
+        FILTER ( ALL ( dim_product[sku_id] ),
+                 [Net Sales] >= ThisSKURev ),
+        [Net Sales]
+    )
+RETURN DIVIDE ( RevBelowOrEqual, AllRev )
