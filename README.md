@@ -12,6 +12,8 @@
 >
 > **Companion project:** the [demand-forecasting & promo-analytics extension](https://github.com/vibhapotabatti/rekova-demand-forecasting)
 > — same simulated client, same data, Python modelling on top.
+> **Engineering flagship:** the [Airflow + dbt + DuckDB data platform](https://github.com/vibhapotabatti/rekova-data-platform)
+> takes the same data through a scheduled, tested production pipeline.
 
 ---
 
